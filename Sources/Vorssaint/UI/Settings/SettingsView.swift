@@ -145,9 +145,11 @@ struct SettingsView: View {
             // real space it was actually given for normal layout, and ~zero
             // when asked for an unconstrained ideal size, breaking the chain.
             GeometryReader { geometry in
-                detail
-                    .settingsSectionFocus(for: router.page)
-                    .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+                NavigationPageStack(selection: detailIdentity) {
+                    detail
+                        .settingsSectionFocus(for: router.page)
+                        .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+                }
             }
         }
         .navigationSplitViewStyle(.balanced)
@@ -520,6 +522,15 @@ struct SettingsView: View {
 
     private func isPageVisible(_ page: SettingsPage) -> Bool {
         FeatureVisibilitySupport.isPageVisible(page, isAvailable: { $0.isAvailable })
+    }
+
+    /// General and Energy render separate tools on the same logical page.
+    /// Other anchors scroll within an existing page and keep its local state.
+    private var detailIdentity: FeatureSettingsDestination {
+        switch router.page {
+        case .general, .energy: return router.destination
+        default: return FeatureSettingsDestination(router.page)
+        }
     }
 
     @ViewBuilder

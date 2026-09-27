@@ -190,7 +190,11 @@ struct MenuPanelView: View {
             OverlayScrollView(measuredHeight: $navigableContentHeight) {
                 Group {
                     if let selectedMetric { MetricDetailView(kind: selectedMetric) }
-                    else { section(for: activeSection, collapsible: false) }
+                    else {
+                        NavigationPageStack(selection: activeSection) {
+                            section(for: activeSection, collapsible: false)
+                        }
+                    }
                 }
                 .frame(width: size.width)
                 .environment(\.notchPresentation, true)
@@ -210,7 +214,7 @@ struct MenuPanelView: View {
             sectionNavigation
 
             OverlayScrollView(measuredHeight: $navigableContentHeight) {
-                VStack(alignment: .leading, spacing: 12) {
+                NavigationPageStack(selection: activeSection) {
                     section(for: activeSection, collapsible: false)
                 }
                 .frame(width: 308)
@@ -364,8 +368,8 @@ struct MenuPanelView: View {
         Picker(selection: Binding(
             get: { activeSection },
             set: { section in
-                // Native segmented controls own their feedback; content and
-                // keyboard selection update immediately without a panel spring.
+                // Commit immediately. The content host owns its short transition,
+                // leaving the native picker and the rest of the panel responsive.
                 selectedSection = section
                 focusedSection = section
             }

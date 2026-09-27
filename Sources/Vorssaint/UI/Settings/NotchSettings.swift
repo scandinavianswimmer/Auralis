@@ -110,10 +110,12 @@ struct NotchSettings: View {
                 }
             }
             NotchSettingsTabRow(tab: $tab, language: l10n.language, canOpen: enabled) { NotchService.shared.open() }
-            if tab == .content {
-                GeometryReader { proxy in contentEditor(in: proxy.size) }
-            } else {
-                pageScroll
+            NavigationPageStack(selection: tab) {
+                if tab == .content {
+                    GeometryReader { proxy in contentEditor(in: proxy.size) }
+                } else {
+                    pageScroll
+                }
             }
         }
         .padding(.horizontal, 22).padding(.top, 22)

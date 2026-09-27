@@ -6,7 +6,9 @@ Auralis is a native SwiftUI/AppKit macOS app. Its interface is compiled against 
 
 - The mixer uses SwiftUI `Slider` for output, microphone, and per-app levels. System hit testing, keyboard adjustment, accessibility, and pointer tracking replace the custom glass-thumb renderer and gesture math.
 - Slider transactions suppress inherited animation, keeping the control directly attached to its input.
-- Section navigation uses SwiftUI's segmented `Picker`. The operating system supplies selection, focus, and interaction feedback; switching content does not trigger a global layout spring.
+- Section navigation uses SwiftUI's segmented `Picker`. The operating system supplies selection, focus, and interaction feedback.
+- Menu tabs, Settings destinations, and Dynamic Island settings tabs use a shared page transition: an 8-point rise with a 220 ms perceptual-duration, zero-bounce spring; the outgoing page fades over 100 ms. Selection commits immediately and rapid clicks can interrupt transitions. Keyboard/assistive activation and Reduce Motion switch immediately. Animation is scoped to the page envelope, keeping live values and controls direct.
+- The navigation layout measures only the incoming page so outgoing content cannot double the menu's height or hold it open at a stale size.
 - Mixer options use `DisclosureGroup` and a short, critically damped SwiftUI spring for mouse activation. Keyboard/assistive activation and Reduce Motion use immediate updates.
 - Section labels use system semantic typography. Existing native glass footer buttons, system appearance, and Reduce Transparency behavior remain in place.
 
@@ -26,3 +28,9 @@ A local SwiftUI `@State` typecheck with the default macOS 27 SDK fails because `
 ## Verification
 
 Built successfully with the Apple macOS 26 SDK. App self-test and strict bundle signature verification passed. All 309 mixer checks and the 19-check limiter recovery regression passed. Live UI inspection verified native slider accessibility roles, segmented navigation, and options expansion on macOS 26.6.2.
+
+### Navigation motion update
+
+The navigation update builds with the macOS 26 SDK, passes app self-test and strict signature verification, and is installed in `/Applications/Auralis.app`. Live checks covered menu tab changes, tall-to-short content sizing, Settings destinations, and successive keyboard back/forward navigation.
+
+Existing Settings (366), mixer (309), and panel/switcher (1,521) checks pass. The broader Dynamic Island suite passes 29,051 of 29,052 checks; `NotchCompactTests.swift:254` fails its history-rail virtualization limit on both runs. That fixture uses unchanged `NotchRail` code from `NotchComponents.swift` and does not compile or exercise the new navigation container. This failure remains unresolved; it is not counted as a passing suite. The Dynamic Island settings tabs were compiled but were not exercised in the live app because that feature is not enabled in the current configuration.

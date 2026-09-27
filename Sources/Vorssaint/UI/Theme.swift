@@ -19,6 +19,15 @@ enum Theme {
 /// A short, critically damped response for infrequent pointer disclosures.
 /// Keyboard and assistive activation stay immediate; reduced motion is static.
 enum PanelMotion {
+    /// A quick, soft settle with no bounce. Keep keyboard navigation immediate,
+    /// and use a static change for Reduce Motion and assistive activation.
+    static func navigation(reduceMotion: Bool) -> Animation? {
+        guard !reduceMotion,
+              let event = NSApp.currentEvent,
+              event.type == .leftMouseDown || event.type == .leftMouseUp else { return nil }
+        return .smooth(duration: 0.22, extraBounce: 0)
+    }
+
     static func disclosure(reduceMotion: Bool) -> Animation? {
         guard !reduceMotion,
               let event = NSApp.currentEvent,
