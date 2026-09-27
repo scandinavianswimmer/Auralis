@@ -133,22 +133,23 @@ final class BoostLookaheadLimiter {
                 // existing, faster ramp is retained whenever that is needed.
                 attackFrames = Self.lookaheadFrames
             }
-            if isOverCeiling { holdFrames = Self.lookaheadFrames }
+            // Only renew the hold for a peak that needs the current attenuation.
+            // Lesser peaks must allow recovery, even when still above ceiling.
+            // A 0.1% tolerance keeps sampled peaks of a steady tone on one
+            // hold, avoiding tiny release/attack cycles between adjacent peaks.
+            if isOverCeiling && requiredGain <= targetGain * 1.001 { holdFrames = Self.lookaheadFrames + 1 }
 
             if attackFrames > 0 {
                 gain += attackStep
                 attackFrames -= 1
-                if gain <= targetGain {
+                if gain <= targetGain || attackFrames == 0 {
                     gain = targetGain
                     attackFrames = 0
                 }
-            } else if isOverCeiling {
-                // Keep the full hold window; this frame is emitted only after
-                // that window has elapsed.
             } else if holdFrames > 0 {
                 holdFrames -= 1
             } else {
-                gain = 1 + (gain - 1) * release
+                gain = min(requiredGain, 1 + (gain - 1) * release)
                 targetGain = gain
             }
 
@@ -236,19 +237,19 @@ final class BoostLookaheadBufferListLimiter {
                 attackStep = attackFrames > 0 ? min(attackStep, nextStep) : nextStep
                 attackFrames = BoostLookaheadLimiter.lookaheadFrames
             }
-            if isOverCeiling { holdFrames = BoostLookaheadLimiter.lookaheadFrames }
+            if isOverCeiling && requiredGain <= targetGain * 1.001 { holdFrames = BoostLookaheadLimiter.lookaheadFrames + 1 }
 
             if attackFrames > 0 {
                 gain += attackStep
                 attackFrames -= 1
-                if gain <= targetGain {
+                if gain <= targetGain || attackFrames == 0 {
                     gain = targetGain
                     attackFrames = 0
                 }
-            } else if !isOverCeiling, holdFrames > 0 {
+            } else if holdFrames > 0 {
                 holdFrames -= 1
-            } else if !isOverCeiling {
-                gain = 1 + (gain - 1) * release
+            } else {
+                gain = min(requiredGain, 1 + (gain - 1) * release)
                 targetGain = gain
             }
 

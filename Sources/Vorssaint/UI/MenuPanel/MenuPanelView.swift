@@ -89,6 +89,10 @@ struct MenuPanelView: View {
     @State private var navigableContentHeight: CGFloat = 0
     @State private var metricContentHeight: CGFloat = 0
     @State private var updateBannerHeight: CGFloat = 0
+    @Namespace private var navigationGlass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @AppStorage(DefaultsKey.liquidGlassEnabled) private var glassEnabled = true
     @State private var selectedSection: PanelSectionID = PanelLayout.order.first ?? .keepAwake
     @State private var selectedMetric: MetricDetailKind?
     @FocusState private var focusedSection: PanelSectionID?
@@ -358,13 +362,24 @@ struct MenuPanelView: View {
         return PanelLayout.isVisibleInPanel(id)
     }
 
+    @ViewBuilder
     private var sectionNavigation: some View {
+        if #available(macOS 26.0, *), glassEnabled, !reduceTransparency, notchSize == nil {
+            GlassEffectContainer(spacing: 4) { navigationItems }
+        } else {
+            navigationItems
+        }
+    }
+
+    private var navigationItems: some View {
         HStack(spacing: 2) {
             ForEach(visibleSections) { id in
                 let isActive = activeSection == id
                 Button {
-                    selectedSection = id
-                    focusedSection = id
+                    withAnimation(reduceMotion ? nil : .smooth(duration: 0.24)) {
+                        selectedSection = id
+                        focusedSection = id
+                    }
                 } label: {
                     Image(systemName: id.symbolName)
                         .font(.system(size: 13.5, weight: .semibold))
@@ -374,11 +389,22 @@ struct MenuPanelView: View {
                 }
                 .buttonStyle(.plain)
                 .focused($focusedSection, equals: id)
-                .foregroundStyle(isActive ? (notchSize != nil ? Color.white : Color.accentColor) : Color.secondary.opacity(0.86))
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isActive ? navigationActiveFill : Color.clear)
-                )
+                .foregroundStyle(isActive ? (notchSize != nil ? Color.white : Color.primary) : Color.secondary.opacity(0.86))
+                .background {
+                    if isActive {
+                        if #available(macOS 26.0, *), glassEnabled, !reduceTransparency, notchSize == nil {
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .fill(.clear)
+                                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 9))
+                                .glassEffectID("selected-section", in: navigationGlass)
+                        } else {
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .fill(navigationActiveFill)
+                        }
+                    }
+                }
+                .accessibilityLabel(id.title(l10n.s))
+                .accessibilityAddTraits(isActive ? .isSelected : [])
                 .help(id.title(l10n.s))
             }
         }
@@ -463,31 +489,27 @@ struct MenuPanelView: View {
         .padding(.top, 4)
     }
 
+    @ViewBuilder
     private func footerButton(_ title: String, systemImage: String,
                               horizontalPadding: CGFloat = 8,
                               action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: systemImage)
-                .font(.system(size: 11, weight: .medium))
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .minimumScaleFactor(0.78)
-                .labelStyle(.titleAndIcon)
-                .padding(.horizontal, horizontalPadding)
-                .frame(maxWidth: .infinity, minHeight: 28)
-                .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(notchSize != nil ? .black : PanelSurface.cardFill(for: colorScheme))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.8)
-                )
-                .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        if #available(macOS 26.0, *), glassEnabled, !reduceTransparency, notchSize == nil {
+            Button(action: action) {
+                Label(title, systemImage: systemImage)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.glass)
+            .controlSize(.regular)
+        } else {
+            Button(action: action) {
+                Label(title, systemImage: systemImage)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
     }
+
 }
 
 private struct MenuPanelHeader: View {
@@ -496,9 +518,13 @@ private struct MenuPanelHeader: View {
 
     var body: some View {
         ZStack {
-            BrandMark(width: 48, tint: markTint)
-                .frame(height: 28)
-                .accessibilityHidden(true)
+            HStack(spacing: 8) {
+                BrandMark(width: 22, tint: markTint)
+                    .accessibilityHidden(true)
+                Text(AppInfo.name)
+                    .font(.system(size: 15, weight: .semibold))
+            }
+            .frame(height: 28)
 
             if AppInfo.isBeta {
                 HStack {

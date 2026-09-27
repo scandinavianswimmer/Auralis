@@ -25,21 +25,26 @@ let iconSizes: [(name: String, px: Int, icnsType: String?)] = [
 let outDir = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "AppIcon.iconset"
 let scriptDir = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
 let projectDir = scriptDir.deletingLastPathComponent()
-let logoPath = projectDir.appendingPathComponent("Resources/Brand/logo.png").path
-
-guard let logo = NSImage(contentsOfFile: logoPath),
-      let logoTIFF = logo.tiffRepresentation,
-      let logoRep = NSBitmapImageRep(data: logoTIFF)
-else {
-    print("could not load \(logoPath)")
-    exit(1)
+// Original Auralis glyph: three rising sound bars inside a luminous blue tile.
+func forkArtwork(tile: Bool) -> NSImage {
+    NSImage(size: NSSize(width: 1024, height: 1024), flipped: false) { rect in
+        if tile {
+            let shape = NSBezierPath(roundedRect: rect.insetBy(dx: 44, dy: 44), xRadius: 220, yRadius: 220)
+            NSGradient(starting: NSColor(calibratedRed: 0.30, green: 0.75, blue: 0.98, alpha: 1),
+                       ending: NSColor(calibratedRed: 0.12, green: 0.29, blue: 0.80, alpha: 1))!
+                .draw(in: shape, angle: -60)
+        }
+        (tile ? NSColor.white : NSColor.black).setFill()
+        for (x, height) in [(300.0, 220.0), (464.0, 460.0), (628.0, 330.0)] {
+            NSBezierPath(roundedRect: NSRect(x: x, y: (1024-height)/2, width: 96, height: height),
+                         xRadius: 48, yRadius: 48).fill()
+        }
+        return true
+    }
 }
-
-let appIconPath = projectDir.appendingPathComponent("Resources/Brand/AppIcon-Default.png").path
-guard let appIconMaster = NSImage(contentsOfFile: appIconPath) else {
-    print("could not load \(appIconPath)")
-    exit(1)
-}
+let logo = forkArtwork(tile: false)
+let logoRep = NSBitmapImageRep(data: logo.tiffRepresentation!)!
+let appIconMaster = forkArtwork(tile: true)
 
 /// Bounding box of visible (non-transparent) pixels, so the mark can be
 /// centered optically regardless of padding in the source file.

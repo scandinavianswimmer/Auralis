@@ -1,0 +1,23 @@
+name: Auralis CI
+on:
+  push:
+    branches: [main, liquid-glass-audio-recovery]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Build local fork
+        run: ./script/build_and_run.sh --build-only
+      - name: Selftest
+        run: ./build/Auralis --selftest
+      - name: Limiter recovery
+        run: ./script/test_limiter.sh
+      - name: Unit tests
+        run: ./build.sh --test

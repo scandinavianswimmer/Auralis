@@ -2436,7 +2436,7 @@ enum ScreenshotFeatureTests {
             developerOverride: "https://test.example/")
         suite.expect(testShareEndpoint.absoluteString == "https://test.example"
                 && ScreenshotSharingSupport.endpoint(
-                    bundleIdentifier: "com.vorssaint.utils",
+                    bundleIdentifier: "io.github.scandinavianswimmer.auralis",
                     developerOverride: "https://test.example").absoluteString
                     == ScreenshotSharingSupport.productionEndpoint.absoluteString
                 && ScreenshotSharingSupport.endpoint(

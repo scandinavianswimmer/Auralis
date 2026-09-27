@@ -43,16 +43,16 @@ for arg in "$@"; do
 done
 
 if (( DEV )); then
-    APP_NAME="Vorssaint (Developer)"
-    EXECUTABLE="VorssaintDeveloper"
-    APP_BUNDLE_ID="com.vorssaint.utils.dev"
+    APP_NAME="Auralis (Developer)"
+    EXECUTABLE="AuralisDeveloper"
+    APP_BUNDLE_ID="io.github.scandinavianswimmer.auralis.dev"
     BUILD_VARIANT_FLAGS=(-D VORSSAINT_DEVELOPMENT)
     APP_OPTIMIZATION_FLAGS=(-Onone)
     BUILD_CONFIGURATION="debug"
 else
-    APP_NAME="Vorssaint"
-    EXECUTABLE="Vorssaint"
-    APP_BUNDLE_ID="com.vorssaint.utils"
+    APP_NAME="Auralis"
+    EXECUTABLE="Auralis"
+    APP_BUNDLE_ID="io.github.scandinavianswimmer.auralis"
     BUILD_VARIANT_FLAGS=()
     APP_OPTIMIZATION_FLAGS=(-O)
     BUILD_CONFIGURATION="release"
@@ -64,52 +64,11 @@ NOW_PLAYING_ADAPTER_ID="$APP_BUNDLE_ID.now-playing"
 NOW_PLAYING_ADAPTER="libVorssaintNowPlaying.dylib"
 TARGET="arm64-apple-macosx14.0"
 ENTITLEMENTS="Resources/Vorssaint.entitlements"
-LEGACY_IDENTITY="Vorssaint Utils Signing"
+LEGACY_IDENTITY="Auralis Local Signing"
 
-developer_id_identity() {
-    security find-identity -v -p codesigning 2>/dev/null \
-        | grep 'Developer ID Application' \
-        | head -1 \
-        | sed -E 's/.*"(.*)".*/\1/' || true
-}
-
-# A find-identity listing also names certificates codesign then rejects (an
-# expired one fails the build with errSecInternalComponent), and -v excludes
-# every self-signed one; ask codesign itself with a throwaway copy of /bin/echo.
-legacy_identity_installed() {
-    local probe signed=1
-    # A locked keychain still lists its identities but cannot sign with them,
-    # and this one is locked after every reboot; unlock it before asking.
-    security unlock-keychain -p vorssaint-signing \
-        "$HOME/Library/Keychains/vorssaint-signing.keychain-db" 2>/dev/null || true
-    probe="$(mktemp)"
-    cp /bin/echo "$probe"
-    /usr/bin/codesign --force --strip-disallowed-xattrs --sign "$LEGACY_IDENTITY" "$probe" \
-        >/dev/null 2>&1 && signed=0
-    rm -f "$probe"
-    return $signed
-}
-
-# Any build that lands in /Applications needs a stable signature, not just the
-# Developer one: macOS ties Accessibility and Screen Recording grants to the
-# exact binary hash, so an ad-hoc rebuild orphans them while System Settings
-# keeps showing them as granted, and no new prompt ever appears. A plain
-# --install strands them under the released bundle id, on the app the user
-# actually relies on. When no identity is installed, create the stable local one
-# up front instead of falling through to ad-hoc — setup-signing.sh is free,
-# offline and idempotent. Gating on the install rather than the variant keeps
-# this off CI, where neither ci.yml nor release.yml passes --install.
-if (( DEV || INSTALL )) && [[ -z "$(developer_id_identity)" ]] \
-    && ! legacy_identity_installed; then
-    echo "▸ No signing identity installed; creating the stable local one…"
-    if ! ./Tools/setup-signing.sh; then
-        echo "  ⚠ Tools/setup-signing.sh failed; signing ad-hoc instead." >&2
-        echo "    Accessibility and Screen Recording grants will not survive rebuilds:" >&2
-        echo "    System Settings will show them as granted while the app is not trusted." >&2
-        echo "    After fixing the identity, clear the stale grant once with:" >&2
-        echo "      tccutil reset Accessibility $APP_BUNDLE_ID" >&2
-    fi
-fi
+# Local fork uses ad-hoc signing and never creates or unlocks keychains.
+developer_id_identity() { return 0; }
+legacy_identity_installed() { return 1; }
 
 codesign_with_timestamp_retry() {
     local attempt
@@ -580,7 +539,7 @@ swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" -emit-library \
 echo "▸ Generating app icon…"
 swift Tools/MakeIcon.swift build/AppIcon.iconset
 xattr -c -r build/AppIcon.iconset build/AppIcon.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png 2>/dev/null || true
-ACTOOL_BIN="$(xcrun --find actool 2>/dev/null || true)"
+ACTOOL_BIN="" # Fork uses its own generated icon, never the upstream catalog.
 ICON_TMP="$(mktemp -d)"
 ADAPTIVE_SKIP=""
 if [[ -z "$ACTOOL_BIN" ]]; then
@@ -637,7 +596,7 @@ if (( DEV )); then
     FAN_PLIST="$STAGE/Contents/Library/LaunchDaemons/$FAN_HELPER_ID.plist"
     /usr/libexec/PlistBuddy -c "Set :Label $FAN_HELPER_ID" "$FAN_PLIST"
     /usr/libexec/PlistBuddy -c "Set :BundleProgram Contents/Library/LaunchServices/$FAN_HELPER_ID" "$FAN_PLIST"
-    /usr/libexec/PlistBuddy -c "Delete :MachServices:com.vorssaint.utils.fan-control" "$FAN_PLIST"
+    /usr/libexec/PlistBuddy -c "Delete :MachServices:io.github.scandinavianswimmer.auralis.fan-control" "$FAN_PLIST"
     /usr/libexec/PlistBuddy -c "Add :MachServices:$FAN_HELPER_ID bool true" "$FAN_PLIST"
     # Stamp the source commit + build time so the running dev app shows (in About)
     # exactly which code it was compiled from. Lets you verify it matches HEAD before
@@ -843,16 +802,6 @@ fi
 if (( INSTALL )); then
     echo "▸ Installing into /Applications…"
     stop_process "$EXECUTABLE"
-    # Remove the pre-rename apps so two menu bar items never coexist. Same bundle
-    # id, so macOS keeps the granted permissions for the new bundle.
-    for legacy in "Vorss:Vorss" "Vorssaint Utils:VorssaintUtils"; do
-        name="${legacy%%:*}"; proc="${legacy##*:}"
-        if [[ -d "/Applications/$name.app" ]]; then
-            stop_process "$proc"
-            rm -rf "/Applications/$name.app"
-            echo "  (legacy $name.app removed)"
-        fi
-    done
     INSTALL_DEST="/Applications/$APP_NAME.app"
     rm -rf "$INSTALL_DEST"
     ditto --noextattr --noqtn "$STAGE" "$INSTALL_DEST"

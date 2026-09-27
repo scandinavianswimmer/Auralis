@@ -110,9 +110,8 @@ enum PanelSurface {
 }
 
 func sectionTitle(_ text: String) -> some View {
-    Text(text.uppercased())
-        .font(.system(size: 10, weight: .semibold))
-        .kerning(0.5)
+    Text(text)
+        .font(.system(size: 12, weight: .semibold))
         .foregroundStyle(.secondary)
 }
 
@@ -140,13 +139,13 @@ private struct PanelCardModifier: ViewModifier {
             content.padding(12).modifier(NotchControlSurface(cornerRadius: 18, interactive: interactive))
         } else {
         content
-            .padding(10)
+            .padding(14)
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(PanelSurface.cardFill(for: colorScheme))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.7)
             )
         }
@@ -158,7 +157,7 @@ private struct PanelGlassSurface: View {
     @Environment(\.notchPresentation) private var notchPresentation
     @Environment(\.notchGlassSurface) private var notchGlassSurface
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @AppStorage(DefaultsKey.liquidGlassEnabled) private var liquidGlassEnabled = false
+    @AppStorage(DefaultsKey.liquidGlassEnabled) private var liquidGlassEnabled = true
 
     var body: some View {
         // AppKit hands the hosted panel a safe area for the popover's border and
@@ -182,10 +181,7 @@ private struct PanelGlassSurface: View {
             Rectangle()
                 .fill(Color.clear)
                 .glassEffect(.regular, in: Rectangle())
-                .overlay(
-                    Rectangle()
-                        .fill(PanelSurface.baseFill(for: colorScheme).opacity(colorScheme == .light ? 0.35 : 0.45))
-                )
+
         } else {
             standardSurface
         }

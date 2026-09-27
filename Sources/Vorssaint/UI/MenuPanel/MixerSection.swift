@@ -15,7 +15,7 @@ struct MixerSection: View {
     @ObservedObject private var inputManager = AudioInputDeviceManager.shared
     @ObservedObject private var audioPriority = AudioPriorityService.shared
     @ObservedObject private var micMute = MicMuteService.shared
-    @AppStorage(DefaultsKey.liquidGlassEnabled) private var windowsGlass = false
+    @AppStorage(DefaultsKey.liquidGlassEnabled) private var windowsGlass = true
     @AppStorage(DefaultsKey.notchLiquidGlassEnabled) private var islandGlass = false
     @AppStorage(DefaultsKey.mixerAppArrangement)
     private var arrangementValue = ""

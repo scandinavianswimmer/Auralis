@@ -4,12 +4,12 @@
 import Foundation
 
 enum FanControlIdentifiers {
-    static let teamID = "3D485NHW29"
+    static let teamID = "AURALIS_LOCAL"
 
     #if VORSSAINT_DEVELOPMENT
-    static let appBundleID = "com.vorssaint.utils.dev"
+    static let appBundleID = "io.github.scandinavianswimmer.auralis.dev"
     #else
-    static let appBundleID = "com.vorssaint.utils"
+    static let appBundleID = "io.github.scandinavianswimmer.auralis"
     #endif
 
     static let helperID = "\(appBundleID).fan-control"

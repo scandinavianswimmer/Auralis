@@ -26,8 +26,8 @@ enum PreferencesFeatureTests {
                "monitor memory metric is included in settings backups")
         suite.expect(registeredDefaults[DefaultsKey.appearance] as? String == AppAppearance.system.rawValue,
                "the app follows the system appearance until the user picks a side")
-        suite.expect(registeredDefaults[DefaultsKey.liquidGlassEnabled] as? Bool == false,
-               "liquid glass in other windows is opt-in")
+        suite.expect(registeredDefaults[DefaultsKey.liquidGlassEnabled] as? Bool == true,
+               "Auralis enables native window glass by default")
         suite.expect(registeredDefaults[DefaultsKey.notchLiquidGlassEnabled] as? Bool == false,
                "liquid glass in Dynamic Island is opt-in")
         suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.liquidGlassEnabled),
@@ -45,12 +45,12 @@ enum PreferencesFeatureTests {
         defer { glassDefaults.removePersistentDomain(forName: glassDomain) }
         Defaults.migrateLiquidGlassIsland(in: glassDefaults, domainName: glassDomain)
         suite.expect(glassDefaults.persistentDomain(forName: glassDomain)?[
-            DefaultsKey.notchLiquidGlassEnabled] as? Bool == false,
-               "a new installation saves the island glass choice as off")
+            DefaultsKey.notchLiquidGlassEnabled] as? Bool == true,
+               "a new installation inherits the Auralis glass default")
         glassDefaults.set(true, forKey: DefaultsKey.liquidGlassEnabled)
         Defaults.migrateLiquidGlassIsland(in: glassDefaults, domainName: glassDomain)
-        suite.expect(!glassDefaults.bool(forKey: DefaultsKey.notchLiquidGlassEnabled),
-               "turning on glass for other windows after the first launch leaves the island off")
+        suite.expect(glassDefaults.bool(forKey: DefaultsKey.notchLiquidGlassEnabled),
+               "later window choices preserve the saved island preference")
         glassDefaults.removeObject(forKey: DefaultsKey.notchLiquidGlassEnabled)
         Defaults.migrateLiquidGlassIsland(in: glassDefaults, domainName: glassDomain)
         suite.expect(glassDefaults.bool(forKey: DefaultsKey.notchLiquidGlassEnabled),

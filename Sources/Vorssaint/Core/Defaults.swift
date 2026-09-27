@@ -1076,7 +1076,7 @@ enum Defaults {
 
     static let registeredDefaults: [String: Any] = [
         DefaultsKey.appearance: AppAppearance.fallback.rawValue,
-        DefaultsKey.liquidGlassEnabled: false,
+        DefaultsKey.liquidGlassEnabled: true,
         DefaultsKey.notchLiquidGlassEnabled: false,
         DefaultsKey.clamshellPreferred: false,
         DefaultsKey.dimScreenOnLidClose: false,
@@ -1799,7 +1799,7 @@ enum Defaults {
         guard let domainName else { return }
         let saved = defaults.persistentDomain(forName: domainName) ?? [:]
         guard saved[DefaultsKey.notchLiquidGlassEnabled] == nil else { return }
-        defaults.set(saved[DefaultsKey.liquidGlassEnabled] as? Bool ?? false,
+        defaults.set(saved[DefaultsKey.liquidGlassEnabled] as? Bool ?? true,
                      forKey: DefaultsKey.notchLiquidGlassEnabled)
     }
 

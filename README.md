@@ -1,3 +1,11 @@
+# Auralis — native glass macOS utility fork
+
+Personal fork with native Liquid Glass defaults and a lookahead audio-limiter recovery fix. See [FORK.md](FORK.md) for build instructions, tests, and limitations.
+
+---
+
+## Upstream documentation
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/logo-dark.svg">

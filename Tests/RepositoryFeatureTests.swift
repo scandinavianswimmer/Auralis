@@ -1277,16 +1277,15 @@ enum RepositoryFeatureTests {
             $0.range(of: #"^\s*(if\s+!?\s*)?\./Tools/setup-signing\.sh"#,
                      options: .regularExpression) != nil
         }
-        suite.expect(runsSigningSetup,
-               "an identity-less build that installs invokes Tools/setup-signing.sh itself")
+        suite.expect(!runsSigningSetup,
+               "the local fork never creates or unlocks a signing keychain")
         // The guard is on the install, not on the variant: a plain --install
         // replaces the bundle under the released id, so it strands the grants
         // on the app people actually use. CI never passes --install.
         let buildScriptCode = buildScript.components(separatedBy: "\n")
             .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("#") }
-        suite.expect(buildScriptCode.contains { $0.contains("(( DEV || INSTALL ))")
-                                            && $0.contains("developer_id_identity") },
-               "the signing setup guard covers every install, not only the Developer variant")
+        suite.expect(buildScriptCode.contains { $0.contains("legacy_identity_installed() { return 1; }") },
+               "the local fork explicitly declines upstream signing identities")
         // The setup script must run against the stock /usr/bin/openssl, which
         // is LibreSSL: it rejects OpenSSL 3's -legacy flag outright, and the
         // script once died on exactly that with its stderr discarded. The
@@ -1303,8 +1302,7 @@ enum RepositoryFeatureTests {
         // MARK: The stable identity is judged by whether codesign can sign with it
         // A find-identity listing names certificates codesign then rejects, and
         // -v excludes every self-signed one, so neither spelling may decide.
-        for (script, code, identity) in [("build.sh", buildScriptCode, "$LEGACY_IDENTITY"),
-                                         ("Tools/setup-signing.sh", signingSetupCode.components(separatedBy: "\n"),
+        for (script, code, identity) in [("Tools/setup-signing.sh", signingSetupCode.components(separatedBy: "\n"),
                                           "$IDENTITY")] {
             suite.expect(!code.contains { $0.contains("find-identity") && $0.contains(identity) },
                    "\(script) never decides the stable identity by a find-identity listing")

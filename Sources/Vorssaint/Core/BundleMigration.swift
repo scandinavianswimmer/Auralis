@@ -29,6 +29,7 @@ enum BundleMigration {
     /// name; the caller should then skip the rest of startup.
     @discardableResult
     static func run() -> Bool {
+        guard Bundle.main.bundleIdentifier?.hasPrefix("io.github.scandinavianswimmer.auralis") != true else { return false }
         let bundleURL = Bundle.main.bundleURL
         if bundleURL.lastPathComponent == oldName {
             return renameSelfAndRelaunch(from: bundleURL)
