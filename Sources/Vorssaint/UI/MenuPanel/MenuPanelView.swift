@@ -89,8 +89,6 @@ struct MenuPanelView: View {
     @State private var navigableContentHeight: CGFloat = 0
     @State private var metricContentHeight: CGFloat = 0
     @State private var updateBannerHeight: CGFloat = 0
-    @Namespace private var navigationGlass
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @AppStorage(DefaultsKey.liquidGlassEnabled) private var glassEnabled = true
     @State private var selectedSection: PanelSectionID = PanelLayout.order.first ?? .keepAwake
@@ -362,66 +360,29 @@ struct MenuPanelView: View {
         return PanelLayout.isVisibleInPanel(id)
     }
 
-    @ViewBuilder
     private var sectionNavigation: some View {
-        if #available(macOS 26.0, *), glassEnabled, !reduceTransparency, notchSize == nil {
-            GlassEffectContainer(spacing: 4) { navigationItems }
-        } else {
-            navigationItems
-        }
-    }
-
-    private var navigationItems: some View {
-        HStack(spacing: 2) {
-            ForEach(visibleSections) { id in
-                let isActive = activeSection == id
-                Button {
-                    withAnimation(reduceMotion ? nil : .smooth(duration: 0.24)) {
-                        selectedSection = id
-                        focusedSection = id
-                    }
-                } label: {
-                    Image(systemName: id.symbolName)
-                        .font(.system(size: 13.5, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 30)
-                        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .focused($focusedSection, equals: id)
-                .foregroundStyle(isActive ? (notchSize != nil ? Color.white : Color.primary) : Color.secondary.opacity(0.86))
-                .background {
-                    if isActive {
-                        if #available(macOS 26.0, *), glassEnabled, !reduceTransparency, notchSize == nil {
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .fill(.clear)
-                                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 9))
-                                .glassEffectID("selected-section", in: navigationGlass)
-                        } else {
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .fill(navigationActiveFill)
-                        }
-                    }
-                }
-                .accessibilityLabel(id.title(l10n.s))
-                .accessibilityAddTraits(isActive ? .isSelected : [])
-                .help(id.title(l10n.s))
+        Picker(selection: Binding(
+            get: { activeSection },
+            set: { section in
+                // Native segmented controls own their feedback; content and
+                // keyboard selection update immediately without a panel spring.
+                selectedSection = section
+                focusedSection = section
             }
+        )) {
+            ForEach(visibleSections) { section in
+                Image(systemName: section.symbolName)
+                    .help(section.title(l10n.s))
+                    .accessibilityLabel(section.title(l10n.s))
+                    .tag(section)
+            }
+        } label: {
+            Text(l10n.s.settingsTitle)
         }
-        .padding(4)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(notchSize != nil ? .black : PanelSurface.cardFill(for: colorScheme))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.7)
-        )
-    }
-
-    private var navigationActiveFill: Color {
-        if notchSize != nil { return .black }
-        return colorScheme == .light ? Color.accentColor.opacity(0.13) : Color.accentColor.opacity(0.20)
+        .labelsHidden()
+        .pickerStyle(.segmented)
+        .controlSize(.regular)
+        .frame(maxWidth: .infinity)
     }
 
     private func metricNavigationHeader(_ kind: MetricDetailKind) -> some View {

@@ -11,6 +11,10 @@ A personal, GPL-3.0-or-later fork of [Vorssaint](https://github.com/vorssaint/vo
 - Separate app name, generated icon, bundle/preferences identity, and disabled automatic source-build updates. Original copyright and GPL notices are retained.
 - Fixed both lookahead limiter implementations retaining excessive attenuation after a strong peak when subsequent audio remains above the ceiling. Recovery maintains the lookahead hold and linked stereo gain. A 0.1% peak tolerance avoids chattering on steady sampled tones, and the attack lands exactly on its target.
 
+## Native SDK refinement
+
+The follow-up interface pass replaces custom mixer-slider rendering and section navigation with Apple's `Slider` and segmented `Picker`, and uses a native `DisclosureGroup` with restrained, interruptible motion. See [DESIGN.md](DESIGN.md) for the implementation decisions and Emil Kowalski/Apple references.
+
 ## Build and use
 
 Requires Apple Silicon, macOS 14+, and current Apple Command Line Tools. Liquid Glass requires macOS 26+. This build uses the installed macOS 26 SDK; it does not require unverified macOS 27-only APIs.

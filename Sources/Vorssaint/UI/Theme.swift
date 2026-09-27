@@ -16,6 +16,17 @@ enum Theme {
     )
 }
 
+/// A short, critically damped response for infrequent pointer disclosures.
+/// Keyboard and assistive activation stay immediate; reduced motion is static.
+enum PanelMotion {
+    static func disclosure(reduceMotion: Bool) -> Animation? {
+        guard !reduceMotion,
+              let event = NSApp.currentEvent,
+              event.type == .leftMouseDown || event.type == .leftMouseUp else { return nil }
+        return .spring(response: 0.22, dampingFraction: 1)
+    }
+}
+
 enum PanelMetricColor {
     static func green(for scheme: ColorScheme) -> Color {
         scheme == .light ? Color(red: 0.00, green: 0.44, blue: 0.18) : .green
@@ -111,7 +122,7 @@ enum PanelSurface {
 
 func sectionTitle(_ text: String) -> some View {
     Text(text)
-        .font(.system(size: 12, weight: .semibold))
+        .font(.subheadline.weight(.semibold))
         .foregroundStyle(.secondary)
 }
 
